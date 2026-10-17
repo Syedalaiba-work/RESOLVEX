@@ -188,7 +188,9 @@ def test_sync_applied_rebased_rejected_and_order(fresh):
     assert res["a3"]["status"] == "applied" and res["a3"]["server_version"] == 1 and res["a3"]["signature"] is None
     assert res["a4"]["status"] == "rejected" and res["a4"]["error_code"] == "SQUAD_FULL"
     assert res["a4"]["resolution"] == "server_wins"
-    assert res["a5"]["error_code"] == "INVALID_BASE_VERSION" and res["a5"]["server_version"] == 4
+    # a5 ties with a1 on queued_at, so array order puts it second (match version 3 at that point)
+    assert res["a5"]["error_code"] == "INVALID_BASE_VERSION" and res["a5"]["server_version"] == 3
+    assert res["a5"]["processed_order"] == 2
     assert r.json()["summary"] == {"applied": 3, "rejected": 2, "duplicate": 0}
     # resend: everything is a duplicate and nothing changes
     r2 = fresh.post("/audit/v1/offline-sync", json={"device_id": "dev-1", "actions": actions}).json()
