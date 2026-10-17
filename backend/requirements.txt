@@ -3,6 +3,7 @@ uvicorn==0.34.3
 psycopg[binary]==3.2.9
 psycopg-pool==3.2.6
 PyJWT==2.10.1
+networkx==3.4.2
 
 # testing
 pytest==8.4.1

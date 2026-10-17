@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import seed, sports
+from app import fixtures, seed, sports
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -121,6 +121,11 @@ async def reset(request: Request):
 @app.post("/audit/v1/sports", status_code=201)
 async def create_sport(request: Request):
     return sports.create_sport(await read_json(request))
+
+
+@app.post("/audit/v1/fixtures")
+async def generate_fixtures(request: Request):
+    return fixtures.generate(await read_json(request))
 
 
 @app.get("/api/v1/ping")
