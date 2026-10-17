@@ -28,11 +28,27 @@ def test_fixtures_matches_and_standings_for_viewer(api):
     assert statuses["la1-m1"] == "completed" and statuses["la1-m5"] == "in_progress" and statuses["la1-m6"] == "upcoming"
     m1 = next(f for f in fx if f["match_id"] == "la1-m1")
     assert (m1["home_name"], m1["home_score"], m1["away_score"]) == ("Alpha United", 2, 1)
+    assert m1["scoring_events"] == ["goal"]  # cached with the fixture so offline scoring works
     detail = api.get("/api/v1/matches/la1-m1", headers=h).json()
     assert detail["outcome"] == "home_win" and detail["pinned_product"]["product_id"] == "prod-jersey-001"
+    assert detail["scoring_events"] == ["goal"]
     st = api.get("/api/v1/standings/league-alpha-1", headers=h).json()
     assert st["names"]["club-alpha-1"] == "Alpha United" and len(st["table"]) == 4
     assert st["table"][0]["team_id"] == "club-alpha-1"
+
+
+def test_match_detail_lists_scoring_events_from_sport_config(api):
+    sport = {"sport_id": "kabaddi", "name": "Kabaddi", "scoring_model": "event",
+             "periods": {"count": 2, "duration_minutes": 20},
+             "scoring_events": {"raid_point": {"points": 1}, "all_out": {"points": 2}},
+             "draw_allowed": False, "overtime": {"policy": "golden_score"},
+             "roster": {"min_squad_size": 7, "max_squad_size": 12, "required_positions": {}}}
+    assert api.post("/audit/v1/sports", json=sport).status_code == 201
+    init = {"event_id": "k-0", "match_id": "k-m1", "type": "match_init",
+            "payload": {"sport_id": "kabaddi", "home_team_id": "h", "away_team_id": "a"}}
+    assert api.post("/audit/v1/events", json=init).status_code == 201
+    detail = api.get("/api/v1/matches/k-m1", headers=login(api, "admin")).json()
+    assert detail["scoring_events"] == ["all_out", "raid_point"]
 
 
 def test_clubs_products_and_tenant_isolation(api):

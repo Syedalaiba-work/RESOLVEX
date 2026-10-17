@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from app import rbac, roster, scoring, standings, store, sync
+from app import rbac, roster, scoring, sports, standings, store, sync
 from app.core import ApiError, read_json
 from app.db import tx
 
@@ -69,6 +69,7 @@ def fixtures(request: Request, league_id: str | None = None):
                 "status": state["status"], "scheduled_at": schedule.get(m["match_id"]),
                 "home_score": state["side"][m["home_team_id"]]["score"],
                 "away_score": state["side"][m["away_team_id"]]["score"],
+                "scoring_events": sorted(sport.get("scoring_events", {})),
             })
     out.sort(key=lambda f: (f["scheduled_at"] or "", f["match_id"]))
     return out
@@ -88,9 +89,12 @@ def match_detail(request: Request, match_id: str):
         _check_league_visible(conn, claims, view["league_id"])
         names, schedule, pinned = _meta(conn, "team_names"), _meta(conn, "schedule"), _meta(conn, "pinned")
         product = _products(conn, pinned.get(match_id)) if pinned.get(match_id) else []
+        sport = sports.get_sport(conn, view["sport_id"]) or {}
     return {**view, "home_name": names.get(view["home"]["team_id"], view["home"]["team_id"]),
             "away_name": names.get(view["away"]["team_id"], view["away"]["team_id"]),
-            "scheduled_at": schedule.get(match_id), "pinned_product": product[0] if product else None}
+            "scheduled_at": schedule.get(match_id), "pinned_product": product[0] if product else None,
+            # Event names come from the sport's stored config, so clients never hard-code them.
+            "scoring_events": sorted(sport.get("scoring_events", {}))}
 
 
 @router.get("/standings/{league_id}")

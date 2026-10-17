@@ -41,6 +41,17 @@ upcoming), roster squads `sq-alpha-1` / `sq-alpha-2` with an open transfer windo
 Runs the pytest suite inside the API container (against a separate `nascon_test` database) and prints the
 per-area line coverage in the `COVERAGE.json` format. Tests live in `tests/`.
 
+Last verified run (2026-10-17): 241 backend tests passed; measured coverage equals `COVERAGE.json`
+(fixtures 96.7, scoring 98.9, standings 99.2, store 96.8, roster 96.1, rbac 97.6). Mobile: `flutter analyze`
+clean, 17 Flutter tests passed. A cold `docker compose up -d --build` from a fresh clone reached
+`/health` 200 in about 35 s.
+
+### Known limitations
+
+- Live score on the match screen refreshes by polling every 3 s; there is no WebSocket/SSE push channel.
+- The internal queue is a PostgreSQL outbox (`domain_events`) consumed by the `worker` service; there is no
+  separate Redis cache or MinIO object store (receipts are generated per request and returned inline).
+
 ## Mobile app
 
 Source in `mobile/`, installable build at `mobile/release/app-release.apk` (Android 10+). The server address is

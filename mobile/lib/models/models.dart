@@ -153,6 +153,7 @@ class Fixture {
   final String? scheduledAt;
   final int? homeScore;
   final int? awayScore;
+  final List<String> scoringEvents;
 
   const Fixture({
     required this.matchId,
@@ -166,6 +167,7 @@ class Fixture {
     this.scheduledAt,
     this.homeScore,
     this.awayScore,
+    this.scoringEvents = const [],
   });
 
   factory Fixture.fromJson(Map<String, dynamic> j) => Fixture(
@@ -180,6 +182,7 @@ class Fixture {
     scheduledAt: _ns(j['scheduled_at']),
     homeScore: j['home_score'] == null ? null : _i(j['home_score']),
     awayScore: j['away_score'] == null ? null : _i(j['away_score']),
+    scoringEvents: _l(j['scoring_events']).map((e) => e.toString()).toList(),
   );
 }
 
@@ -255,6 +258,9 @@ class MatchDetail {
   final List<MatchEvent> events;
   final Product? pinnedProduct;
 
+  /// Event names defined by the sport's config (from the server, never hard-coded).
+  final List<String> scoringEvents;
+
   const MatchDetail({
     required this.matchId,
     required this.sportId,
@@ -270,6 +276,7 @@ class MatchDetail {
     required this.version,
     required this.events,
     this.pinnedProduct,
+    this.scoringEvents = const [],
   });
 
   String nameFor(String teamId) => teamId == home.teamId
@@ -295,6 +302,7 @@ class MatchDetail {
       version: _i(j['version']),
       events: _l(j['events']).map((e) => MatchEvent.fromJson(_m(e))).toList(),
       pinnedProduct: pinned is Map ? Product.fromJson(_m(pinned)) : null,
+      scoringEvents: _l(j['scoring_events']).map((e) => e.toString()).toList(),
     );
   }
 }

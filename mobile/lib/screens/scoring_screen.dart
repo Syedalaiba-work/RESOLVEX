@@ -9,13 +9,6 @@ import '../services/sync_service.dart';
 import '../widgets/common.dart';
 import '../widgets/loader.dart';
 
-const Map<String, List<String>> kDefaultEventTypes = {
-  'football': ['goal'],
-  'basketball': ['free_throw', 'two_pointer', 'three_pointer'],
-  'cricket': ['run', 'four', 'six', 'wicket', 'wide', 'no_ball', 'dot'],
-  'esports': ['round_win'],
-};
-
 /// League Organizer: append score events and compensating events.
 class ScoringScreen extends StatefulWidget {
   final String? initialMatchId;
@@ -142,6 +135,7 @@ Future<Loaded<MatchDetail>> _loadMatch(AppState app, Fixture f) async {
         scheduledAt: f.scheduledAt,
         version: 0,
         events: const [],
+        scoringEvents: f.scoringEvents,
       ),
       fromCache: true,
     );
@@ -162,15 +156,16 @@ class _ScoringFormState extends State<_ScoringForm> {
   late String _eventType;
   bool _busy = false;
 
+  /// Event types come from the sport's config sent by the server; events already in the
+  /// log are added so an older cached match (without the list) can still be scored.
   List<String> get _types {
     final m = widget.match;
-    final set = <String>{...?kDefaultEventTypes[m.sportId]};
+    final set = <String>{...m.scoringEvents};
     for (final e in m.events) {
       if (e.type == 'score' && e.payload['event_type'] != null) {
         set.add(e.payload['event_type'].toString());
       }
     }
-    if (set.isEmpty) set.add('goal');
     return set.toList();
   }
 
@@ -178,7 +173,8 @@ class _ScoringFormState extends State<_ScoringForm> {
   void initState() {
     super.initState();
     _teamId = widget.match.home.teamId;
-    _eventType = _types.first;
+    final types = _types;
+    _eventType = types.isEmpty ? '' : types.first;
   }
 
   Future<void> _submit(
@@ -358,8 +354,13 @@ class _ScoringFormState extends State<_ScoringForm> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _eventType,
-          decoration: const InputDecoration(labelText: 'Event type'),
+          initialValue: _types.contains(_eventType) ? _eventType : null,
+          decoration: InputDecoration(
+            labelText: 'Event type',
+            helperText: _types.isEmpty
+                ? 'This sport has no scoring events yet. Reconnect to load them.'
+                : null,
+          ),
           items: _types
               .map((t) => DropdownMenuItem(value: t, child: Text(_pretty(t))))
               .toList(),
@@ -368,7 +369,7 @@ class _ScoringFormState extends State<_ScoringForm> {
         const SizedBox(height: 12),
         FilledButton.icon(
           key: const Key('add_score'),
-          onPressed: _busy ? null : _appendScore,
+          onPressed: _busy || _eventType.isEmpty ? null : _appendScore,
           icon: _busy
               ? const SizedBox(
                   width: 18,

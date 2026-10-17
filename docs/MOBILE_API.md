@@ -12,7 +12,7 @@ Money is integer minor units (paisa), currency `PKR`. Timestamps `YYYY-MM-DDTHH:
 | `GET /api/v1/me` | any role | – | `{user, tenant}` |
 | `GET /api/v1/leagues` | any role | – | `[{league_id, name, sport_id, tenant_id}]` (super admin: all tenants) |
 | `GET /api/v1/fixtures` | any role | `?league_id=` optional | `[{match_id, league_id, sport_id, home_team_id, away_team_id, home_name, away_name, status, scheduled_at, home_score, away_score}]` |
-| `GET /api/v1/matches/{match_id}` | any role | – | same body as `GET /audit/v1/score/{id}` plus `home_name`, `away_name`, `scheduled_at`, `pinned_product` (product object or null) |
+| `GET /api/v1/matches/{match_id}` | any role | – | same body as `GET /audit/v1/score/{id}` plus `home_name`, `away_name`, `scheduled_at`, `pinned_product` (product object or null), `scoring_events` (sorted event names from the sport's config) |
 | `GET /api/v1/standings/{league_id}` | any role | – | same body as `GET /audit/v1/standings/{id}` plus `names: {team_id: name}` |
 | `GET /api/v1/clubs` | any role | – | `[{club_id, name, tenant_id}]` |
 | `GET /api/v1/clubs/{club_id}` | any role in tenant | – | `{club_id, name, tenant_id, home_venue, social, staff, history, roster: [{player_id, name, position, role, squad_id}]}` |

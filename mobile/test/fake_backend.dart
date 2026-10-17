@@ -183,6 +183,7 @@ class FakeBackend {
         'home': {'team_id': 'club-alpha-1', 'score': 1, 'fair_play': 0},
         'away': {'team_id': 'club-alpha-2', 'score': 0, 'fair_play': 0},
         'version': 2,
+        'scoring_events': ['goal'],
         'events': [
           {
             'sequence': 1,
