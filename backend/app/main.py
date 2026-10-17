@@ -10,7 +10,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app import fixtures, seed, sports
+from starlette.concurrency import run_in_threadpool
+
+from app import fixtures, scoring, seed, sports, standings
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -115,17 +117,39 @@ def health():
 async def reset(request: Request):
     body = await read_json(request, required=False)
     seed_value, stock = seed.parse_reset(body)
-    return seed.reset(seed_value, stock)
+    return await run_in_threadpool(seed.reset, seed_value, stock)
 
 
 @app.post("/audit/v1/sports", status_code=201)
 async def create_sport(request: Request):
-    return sports.create_sport(await read_json(request))
+    return await run_in_threadpool(sports.create_sport, await read_json(request))
 
 
 @app.post("/audit/v1/fixtures")
 async def generate_fixtures(request: Request):
-    return fixtures.generate(await read_json(request))
+    return await run_in_threadpool(fixtures.generate, await read_json(request))
+
+
+@app.post("/audit/v1/leagues", status_code=201)
+async def register_league(request: Request):
+    return await run_in_threadpool(scoring.register_league, await read_json(request))
+
+
+@app.post("/audit/v1/events")
+async def append_event(request: Request):
+    body = await read_json(request)
+    code, response = await run_in_threadpool(scoring.append_event, body)
+    return JSONResponse(status_code=code, content=response)
+
+
+@app.get("/audit/v1/score/{match_id}")
+def get_score(match_id: str):
+    return scoring.score_view(match_id)
+
+
+@app.get("/audit/v1/standings/{league_id}")
+def get_standings(league_id: str):
+    return standings.standings(league_id)
 
 
 @app.get("/api/v1/ping")
