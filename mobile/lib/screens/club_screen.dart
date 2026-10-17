@@ -112,7 +112,8 @@ class ClubScreen extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 24),
       children: [
         Container(
-          color: scheme.primary,
+          margin: heroMargin,
+          decoration: heroDecoration(),
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [

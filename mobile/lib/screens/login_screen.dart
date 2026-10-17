@@ -80,13 +80,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.sports_soccer,
-                        size: 64,
-                        color: scheme.primary,
-                        semanticLabel: 'NaSCon League',
+                      Semantics(
+                        label: 'NaSCon League',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              SportArtImage(SportArt.football, size: 64),
+                              SportArtImage(SportArt.basketball, size: 64),
+                              SportArtImage(SportArt.cricket, size: 64),
+                              SportArtImage(SportArt.esports, size: 64),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 20),
                       Text(
                         'NaSCon League',
                         textAlign: TextAlign.center,

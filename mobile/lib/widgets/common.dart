@@ -4,6 +4,79 @@ import '../models/models.dart';
 import '../screens/sync_screen.dart';
 import '../services/app_state.dart';
 import '../services/connectivity_service.dart';
+import '../theme.dart';
+
+export '../theme.dart' show AppColors, heroDecoration, heroMargin;
+
+/// True when the user asked the system to reduce motion; animations then run instantly.
+bool reduceMotion(BuildContext context) =>
+    MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+Duration motion(BuildContext context, int ms) =>
+    reduceMotion(context) ? Duration.zero : Duration(milliseconds: ms);
+
+/// Bundled 3D sports renders (decorative, so hidden from screen readers).
+enum SportArt { football, basketball, cricket, esports }
+
+class SportArtImage extends StatelessWidget {
+  final SportArt art;
+  final double size;
+  const SportArtImage(this.art, {super.key, this.size = 96});
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: Image.asset(
+      'assets/sports/${art.name}.webp',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (_, _, _) => SizedBox(width: size, height: size),
+    ),
+  );
+}
+
+/// Cards fade and rise slightly into place the first time they are built.
+class EntryFade extends StatelessWidget {
+  final Widget child;
+  final int index;
+  const EntryFade({super.key, required this.child, this.index = 0});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = motion(context, 260 + 40 * index.clamp(0, 6));
+    if (d == Duration.zero) return child;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: d,
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(offset: Offset(0, 12 * (1 - t)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Score text that cross-fades and scales briefly when the value changes.
+class AnimatedScore extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+  const AnimatedScore(this.text, {super.key, required this.style});
+
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: motion(context, 320),
+    switchInCurve: Curves.easeOutBack,
+    switchOutCurve: Curves.easeIn,
+    transitionBuilder: (child, a) => FadeTransition(
+      opacity: a,
+      child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(a), child: child),
+    ),
+    child: Text(text, key: ValueKey(text), style: style),
+  );
+}
 
 /// Always-visible Online / Offline / Syncing indicator for app bars.
 /// Tapping it opens the pending-action queue.
@@ -56,7 +129,6 @@ class SyncStatusChip extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: bg,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white70),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -177,6 +249,7 @@ class MessageView extends StatelessWidget {
   final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final SportArt? art;
   const MessageView({
     super.key,
     required this.icon,
@@ -184,6 +257,7 @@ class MessageView extends StatelessWidget {
     this.message,
     this.actionLabel,
     this.onAction,
+    this.art,
   });
 
   @override
@@ -193,21 +267,36 @@ class MessageView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 56,
-            color: Theme.of(context).colorScheme.primary,
-            semanticLabel: title,
-          ),
-          const SizedBox(height: 12),
+          if (art != null)
+            SportArtImage(art!, size: 120)
+          else
+            Container(
+              width: 88,
+              height: 88,
+              decoration: const BoxDecoration(
+                color: AppColors.limeSoft,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 44,
+                color: AppColors.accentInk,
+                semanticLabel: title,
+              ),
+            ),
+          const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           if (message != null) ...[
             const SizedBox(height: 8),
-            Text(message!, textAlign: TextAlign.center),
+            Text(
+              message!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.inkMuted, fontSize: 15),
+            ),
           ],
           if (onAction != null) ...[
             const SizedBox(height: 16),
@@ -242,16 +331,18 @@ class EmptyView extends StatelessWidget {
   final String title;
   final String? message;
   final IconData icon;
+  final SportArt? art;
   const EmptyView({
     super.key,
     required this.title,
     this.message,
     this.icon = Icons.inbox_outlined,
+    this.art,
   });
 
   @override
   Widget build(BuildContext context) =>
-      MessageView(icon: icon, title: title, message: message);
+      MessageView(icon: icon, title: title, message: message, art: art);
 }
 
 /// Banner shown above content that came from the offline cache.

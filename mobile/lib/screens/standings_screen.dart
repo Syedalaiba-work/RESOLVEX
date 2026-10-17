@@ -28,6 +28,7 @@ class _StandingsScreenState extends State<StandingsScreen> {
           if (leagues.isEmpty) {
             return const EmptyView(
               icon: Icons.leaderboard,
+              art: SportArt.basketball,
               title: 'No leagues yet',
               message: 'Standings appear once a league has been created.',
             );

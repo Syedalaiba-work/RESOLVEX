@@ -113,8 +113,9 @@ class _MatchScreenState extends State<MatchScreen> {
         children: [
           // Score header
           Container(
-            color: scheme.primary,
-            padding: const EdgeInsets.fromLTRB(12, 16, 12, 20),
+            margin: heroMargin,
+            decoration: heroDecoration(),
+            padding: const EdgeInsets.fromLTRB(12, 18, 12, 22),
             child: Column(
               children: [
                 Row(
@@ -158,13 +159,14 @@ class _MatchScreenState extends State<MatchScreen> {
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
+                        child: AnimatedScore(
                           '${m.home.score} - ${m.away.score}',
                           key: const Key('live_score'),
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
-                            color: scheme.onPrimary,
+                          style: const TextStyle(
+                            fontSize: 44,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1,
+                            color: AppColors.lime,
                           ),
                         ),
                       ),

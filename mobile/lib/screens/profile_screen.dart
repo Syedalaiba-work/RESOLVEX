@@ -22,7 +22,8 @@ class ProfileScreen extends StatelessWidget {
       body: ListView(
         children: [
           Container(
-            color: scheme.primary,
+            margin: heroMargin,
+            decoration: heroDecoration(),
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [

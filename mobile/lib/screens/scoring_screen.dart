@@ -49,6 +49,7 @@ class _ScoringScreenState extends State<ScoringScreen> {
                 if (fixtures.isEmpty) {
                   return const EmptyView(
                     icon: Icons.event_busy,
+                    art: SportArt.cricket,
                     title: 'No matches yet',
                     message: 'There are no matches you can score.',
                   );

@@ -6,7 +6,10 @@ import 'screens/login_screen.dart';
 import 'services/app_state.dart';
 import 'services/local_store.dart';
 import 'services/token_store.dart';
+import 'theme.dart';
 import 'widgets/common.dart';
+
+export 'theme.dart' show buildTheme, parseHex;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,58 +20,6 @@ void main() {
   );
   state.init();
   runApp(LeagueApp(state: state));
-}
-
-Color? parseHex(String? hex) {
-  if (hex == null) return null;
-  var h = hex.trim().replaceFirst('#', '');
-  if (h.length == 3) h = h.split('').map((c) => '$c$c').join();
-  if (h.length == 6) h = 'FF$h';
-  final v = int.tryParse(h, radix: 16);
-  return v == null || h.length != 8 ? null : Color(v);
-}
-
-ThemeData buildTheme(AppState app) {
-  final primary = parseHex(app.tenant?.primaryColor) ?? const Color(0xFF0B3D91);
-  final accent = parseHex(app.tenant?.accentColor) ?? const Color(0xFFF2A900);
-  final scheme = ColorScheme.fromSeed(seedColor: primary).copyWith(
-    primary: primary,
-    onPrimary: ThemeData.estimateBrightnessForColor(primary) == Brightness.dark
-        ? Colors.white
-        : Colors.black,
-    secondary: accent,
-    onSecondary: ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
-        ? Colors.white
-        : Colors.black,
-  );
-  return ThemeData(
-    colorScheme: scheme,
-    useMaterial3: true,
-    appBarTheme: AppBarTheme(
-      backgroundColor: scheme.primary,
-      foregroundColor: scheme.onPrimary,
-    ),
-    materialTapTargetSize: MaterialTapTargetSize.padded,
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(64, 48),
-        textStyle: const TextStyle(fontSize: 16),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: const Size(64, 48)),
-    ),
-    textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-    ),
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(),
-    ),
-    cardTheme: const CardThemeData(
-      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    ),
-    listTileTheme: const ListTileThemeData(minVerticalPadding: 10),
-  );
 }
 
 class LeagueApp extends StatelessWidget {

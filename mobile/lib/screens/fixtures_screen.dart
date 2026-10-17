@@ -105,14 +105,18 @@ class _FixturesScreenState extends State<FixturesScreen> {
                     height: 400,
                     child: EmptyView(
                       icon: Icons.event_busy,
+                      art: SportArt.football,
                       title: 'No matches yet',
                       message: 'Fixtures will appear here once the league schedule is published.',
                     ),
                   ),
-                for (final f in shown)
-                  FixtureCard(
-                    fixture: f,
-                    leagueName: data.leagueNames[f.leagueId],
+                for (final (i, f) in shown.indexed)
+                  EntryFade(
+                    index: i,
+                    child: FixtureCard(
+                      fixture: f,
+                      leagueName: data.leagueNames[f.leagueId],
+                    ),
                   ),
               ],
             ),
@@ -151,7 +155,7 @@ class FixtureCard extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -186,12 +190,13 @@ class FixtureCard extends StatelessWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
+                      child: AnimatedScore(
                         scoreText,
                         style: TextStyle(
-                          fontSize: hasScore ? 22 : 16,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: hasScore ? 26 : 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                          color: hasScore ? AppColors.ink : AppColors.inkMuted,
                         ),
                       ),
                     ),
