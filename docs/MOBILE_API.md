@@ -27,10 +27,10 @@ Money is integer minor units (paisa), currency `PKR`. Timestamps `YYYY-MM-DDTHH:
 `role` is one of `super_admin`, `league_organizer`, `club_manager`, `player`, `viewer`.
 `tenant` = `{tenant_id, name, branding: {primary_color, accent_color, logo_text}}` (null for super admin).
 
-Demo data after every reset: league `demo-league` (tenant-alpha, football) with fixtures between
-`club-alpha-1`, `club-alpha-2`, `club-alpha-3`, `club-alpha-4` (some completed, one in progress, some upcoming);
-roster league `demo-roster` with squads `sq-alpha-1` (club-alpha-1) and `sq-alpha-2` (club-alpha-2), transfer window
-covering the current date. Organizer owns `demo-league` in addition to `league-alpha-1`.
+Demo data after every reset: league `league-alpha-1` (tenant-alpha, football) with six fixtures between
+`club-alpha-1`, `club-alpha-2`, `alpha-falcons`, `alpha-tigers` (some completed, one in progress, one upcoming);
+roster league `league-alpha-1` with squads `sq-alpha-1` (club-alpha-1) and `sq-alpha-2` (club-alpha-2), transfer window
+covering the current date (±30 days). The organizer owns `league-alpha-1`.
 
 ## Offline queue action format (spec 5.14) — the app must store exactly this
 
