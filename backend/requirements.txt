@@ -1,0 +1,11 @@
+fastapi==0.115.12
+uvicorn==0.34.3
+psycopg[binary]==3.2.9
+psycopg-pool==3.2.6
+PyJWT==2.10.1
+
+# testing
+pytest==8.4.1
+pytest-cov==6.2.1
+httpx==0.28.1
+pypdf==5.1.0

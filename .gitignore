@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage.json
+htmlcov/
+reports/
+.venv/
+# Flutter/Android build output (the release APK is committed explicitly from mobile/release/)
+mobile/**/build/
+mobile/**/.dart_tool/
+mobile/**/.gradle/
+mobile/**/local.properties

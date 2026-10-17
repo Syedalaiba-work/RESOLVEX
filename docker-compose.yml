@@ -1,0 +1,41 @@
+name: nascon-league
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nascon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nascon_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-nascon}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DAY1_SALT: ${DAY1_SALT}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nascon}:${POSTGRES_PASSWORD:-nascon_local_dev}@db:5432/${POSTGRES_DB:-nascon}
+      JWT_SECRET: ${JWT_SECRET:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  db_data:
