@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import fixtures, rbac, scoring, seed, sports, standings, store
+from app import fixtures, rbac, roster, scoring, seed, sports, standings, store, sync
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -162,6 +162,28 @@ async def checkout(request: Request):
 @app.get("/audit/v1/inventory/{variant_id}")
 def get_inventory(variant_id: str):
     return store.inventory(variant_id)
+
+
+@app.post("/audit/v1/roster/setup", status_code=201)
+async def roster_setup(request: Request):
+    return await run_in_threadpool(roster.setup, await read_json(request))
+
+
+@app.post("/audit/v1/roster/transfer")
+async def roster_transfer(request: Request):
+    body = await read_json(request)
+    code, response = await run_in_threadpool(roster.transfer, body)
+    return JSONResponse(status_code=code, content=response)
+
+
+@app.get("/audit/v1/roster/history/{player_id}")
+def roster_history(player_id: str, as_of: str | None = None):
+    return roster.history(player_id, as_of)
+
+
+@app.post("/audit/v1/offline-sync")
+async def offline_sync(request: Request):
+    return await run_in_threadpool(sync.sync, await read_json(request))
 
 
 @app.post("/audit/v1/rbac-matrix")
