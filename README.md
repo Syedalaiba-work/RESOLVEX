@@ -46,6 +46,11 @@ Last verified run (2026-10-17): 241 backend tests passed; measured coverage equa
 clean, 17 Flutter tests passed. A cold `docker compose up -d --build` from a fresh clone reached
 `/health` 200 in about 35 s.
 
+Submission check of commit `4c0b63e` (fresh anonymous clone, `--no-cache` build, clean volume): `/health` 200
+32 s after the command started, 241 tests passed, and a black-box probe written from the spec (Appendix A
+vectors, 20-buyer checkout burst, full RBAC matrix, rate limit, roster, offline sync, fixtures) matched the
+contract. The release APK installs and runs on an Android 11 (API 30) emulator.
+
 ### Known limitations
 
 - Live score on the match screen refreshes by polling every 3 s; there is no WebSocket/SSE push channel.
