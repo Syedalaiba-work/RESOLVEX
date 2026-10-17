@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import fixtures, scoring, seed, sports, standings, store
+from app import fixtures, rbac, scoring, seed, sports, standings, store
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -162,6 +162,53 @@ async def checkout(request: Request):
 @app.get("/audit/v1/inventory/{variant_id}")
 def get_inventory(variant_id: str):
     return store.inventory(variant_id)
+
+
+@app.post("/audit/v1/rbac-matrix")
+def rbac_matrix():
+    return rbac.rbac_matrix()
+
+
+# Probe routes: authorize only, no mutation, body ignored (spec 5.13).
+@app.post("/audit/v1/rbac/tenants")
+def probe_tenants(request: Request):
+    return rbac.probe(request, "tenants.create")
+
+
+@app.post("/audit/v1/rbac/leagues/{league_id}/fixtures")
+def probe_league_fixtures(request: Request, league_id: str):
+    return rbac.probe(request, "league.fixtures.write", "league", league_id)
+
+
+@app.post("/audit/v1/rbac/clubs/{club_id}/roster")
+def probe_club_roster(request: Request, club_id: str):
+    return rbac.probe(request, "club.roster.write", "club", club_id)
+
+
+@app.post("/audit/v1/rbac/clubs/{club_id}/products")
+def probe_club_products(request: Request, club_id: str):
+    return rbac.probe(request, "club.products.write", "club", club_id)
+
+
+@app.patch("/audit/v1/rbac/players/{player_id}")
+def probe_player(request: Request, player_id: str):
+    return rbac.probe(request, "player.update", "player", player_id)
+
+
+@app.get("/audit/v1/rbac/clubs/{club_id}")
+def probe_club_read(request: Request, club_id: str):
+    return rbac.probe(request, "club.read", "club", club_id)
+
+
+@app.get("/audit/v1/rbac/platform/config")
+def probe_platform_config(request: Request):
+    return rbac.probe(request, "platform.config.read")
+
+
+@app.post("/api/v1/auth/login")
+async def login(request: Request):
+    body = await read_json(request)
+    return await run_in_threadpool(rbac.login, body.get("email"), body.get("password"))
 
 
 @app.get("/api/v1/ping")
