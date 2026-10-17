@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import fixtures, scoring, seed, sports, standings
+from app import fixtures, scoring, seed, sports, standings, store
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -150,6 +150,18 @@ def get_score(match_id: str):
 @app.get("/audit/v1/standings/{league_id}")
 def get_standings(league_id: str):
     return standings.standings(league_id)
+
+
+@app.post("/audit/v1/checkout")
+async def checkout(request: Request):
+    body = await read_json(request)
+    code, response = await run_in_threadpool(store.checkout, body)
+    return JSONResponse(status_code=code, content=response)
+
+
+@app.get("/audit/v1/inventory/{variant_id}")
+def get_inventory(variant_id: str):
+    return store.inventory(variant_id)
 
 
 @app.get("/api/v1/ping")

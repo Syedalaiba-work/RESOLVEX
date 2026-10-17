@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS variants (
 CREATE TABLE IF NOT EXISTS orders (
     order_id TEXT PRIMARY KEY, request JSONB NOT NULL, status_code INT NOT NULL, response JSONB NOT NULL,
     status TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS payments (
+    id BIGSERIAL PRIMARY KEY, order_id TEXT NOT NULL, kind TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 -- Internal queue (outbox): structured domain events, consumed by the worker.
 CREATE TABLE IF NOT EXISTS domain_events (
     id BIGSERIAL PRIMARY KEY, type TEXT NOT NULL, payload JSONB NOT NULL,
@@ -79,7 +82,7 @@ CREATE TABLE IF NOT EXISTS sync_actions (
 
 ALL_TABLES = [
     "meta", "tenants", "sports", "leagues", "clubs", "players", "users", "standings_leagues",
-    "matches", "events", "products", "variants", "orders", "domain_events", "roster_leagues",
+    "matches", "events", "products", "variants", "orders", "payments", "domain_events", "roster_leagues",
     "roster_audit", "roster_requests", "sync_actions",
 ]
 
