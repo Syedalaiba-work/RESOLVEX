@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import fixtures, rbac, roster, scoring, seed, sports, standings, store, sync
+from app import api_v1, demo, fixtures, rbac, roster, scoring, seed, sports, standings, store, sync
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -26,11 +26,18 @@ async def lifespan(app: FastAPI):
     with tx() as conn:
         seeded = seed.is_seeded(conn)
     if not seeded:
-        seed.reset()
+        full_reset(seed.DEFAULT_SEED, None)
     yield
 
 
 app = FastAPI(title="NaSCon League Platform", lifespan=lifespan)
+app.include_router(api_v1.router)
+
+
+def full_reset(seed_value, stock):
+    result = seed.reset(seed_value, stock)
+    demo.seed_demo()  # mobile desk-check data, rebuilt through the normal domain services
+    return result
 
 
 # --- errors: every non-2xx uses {"error": {code, message, details}} --------------------------------
@@ -117,7 +124,7 @@ def health():
 async def reset(request: Request):
     body = await read_json(request, required=False)
     seed_value, stock = seed.parse_reset(body)
-    return await run_in_threadpool(seed.reset, seed_value, stock)
+    return await run_in_threadpool(full_reset, seed_value, stock)
 
 
 @app.post("/audit/v1/sports", status_code=201)

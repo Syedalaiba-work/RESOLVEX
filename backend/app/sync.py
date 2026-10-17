@@ -22,7 +22,7 @@ def validate(body: dict):
     c.raise_if_any()
 
 
-def sync(body: dict) -> dict:
+def sync(body: dict, authorizer=None) -> dict:
     validate(body)
     device = body["device_id"]
     actions = body["actions"]
@@ -31,7 +31,7 @@ def sync(body: dict) -> dict:
     with scoring.WRITE_LOCK, tx() as conn:
         for processed, idx in enumerate(order, 1):
             action = actions[idx]
-            result = _process(conn, device, action)
+            result = _process(conn, device, action, authorizer)
             result["processed_order"] = processed
             results[idx] = {"action_id": action["action_id"], **result}
             if result["status"] != "duplicate" or not _seen(conn, device, action["action_id"]):
@@ -53,11 +53,14 @@ def _result(status, resolution, code, version, signature=None):
     return {**order_key, "server_version": version, "signature": signature}
 
 
-def _process(conn, device, action) -> dict:
+def _process(conn, device, action, authorizer=None) -> dict:
     kind, base, payload = action["type"], action["base_version"], action["payload"]
     version = _version(conn, kind, payload)
     if _seen(conn, device, action["action_id"]):
         return _result("duplicate", "skipped_duplicate", None, version)
+    denied = authorizer(action) if authorizer else None
+    if denied:
+        return _result("rejected", "server_wins", denied, version)
     try:
         with conn.transaction():  # savepoint: a rejected action leaves no trace
             if kind == "score_event":
