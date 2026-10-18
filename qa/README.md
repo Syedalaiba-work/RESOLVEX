@@ -74,6 +74,10 @@ the default server and the login screen. For a phone set `ANDROID_UDID=<serial>`
 Selectors are Flutter semantics labels (UiAutomator2 `content-desc`). To re-inspect them, dump
 `driver.page_source` (recorded trees: `qa/reports/appium-*-source.xml`, not committed).
 
+The session sets `appium:enforceAppInstall=true`: without it Appium keeps an already-installed build with the
+same version code and silently tests the wrong APK (seen during D5 validation). To prove which build ran,
+hash the device copy: `adb shell pm path com.nascon.nascon_league`, `adb pull <path>`, `sha256sum`.
+
 Troubleshooting:
 - `adb devices` shows nothing for a phone: USB debugging is not active on that connection (Windows lists
   the phone only as an MTP device). Re-plug, accept the RSA prompt; restarting adb does not help.
@@ -111,5 +115,6 @@ docker compose -p nascon-qa -f docker-compose.yml -f qa/target/compose.qa.yml do
 |---|---|
 | Selenium (`qa/selenium`) | 4 passed (grid ready with Chrome 128; `/health` in browser; Swagger UI lists contract routes; "Try it out" GET /health → 200) |
 | Appium (`qa/appium`, emulator API 30, APK SHA-256 `a7fbb1aa…a581d`) | 5 passed in 221.7 s |
+| Appium after the D5 fix (candidate APK `ee64c73e…`, verified installed by hashing the device's base.apk) | 5 passed in 59.7 s, incl. fixture card `clickable=true`; the same check failed on the old APK |
 | k6 smoke (3 VUs, 30 s) | 436 requests, 14.12 req/s, median 10.6 ms, p95 26.8 ms, 0.00 % failed, 435/435 checks, all thresholds OK (`qa/k6/results/smoke-summary.txt`) |
 | k6 guards | non-QA target refused (exit 107); load profile without opt-in refused (exit 107) |

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nascon_league/main.dart';
 import 'package:nascon_league/services/app_state.dart';
@@ -98,6 +99,44 @@ void main() {
     expect(tester.takeException(), isNull);
     await finish(tester, app);
   });
+
+  testWidgets(
+    'screen readers can activate fixture cards, standings rows and the status chip',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      backend.role = 'viewer';
+      final app = await start(tester);
+      await signIn(tester, 'viewer@nascon.test');
+
+      bool tappable(Finder f) => tester
+          .getSemantics(f)
+          .getSemanticsData()
+          .hasAction(SemanticsAction.tap);
+
+      final chip = find.bySemanticsLabel(RegExp(r'^Connection status'));
+      expect(tappable(chip.first), isTrue);
+      final card = find.bySemanticsLabel(RegExp(r'versus'));
+      expect(card, findsWidgets);
+      expect(tappable(card.first), isTrue);
+
+      // Activate the card the way TalkBack does: through the semantics tap action.
+      final node = tester.getSemantics(card.first);
+      node.owner!.performAction(node.id, SemanticsAction.tap);
+      await tester.pumpAndSettle();
+      expect(find.text('Match timeline'), findsOneWidget);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Standings').last);
+      await tester.pumpAndSettle();
+      final row = find.bySemanticsLabel(RegExp(r'^Rank 1,'));
+      expect(tappable(row), isTrue);
+
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+      await finish(tester, app);
+    },
+  );
 
   testWidgets('wrong password shows a plain-language error', (tester) async {
     final app = await start(tester);

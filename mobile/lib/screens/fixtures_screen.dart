@@ -138,22 +138,25 @@ class FixtureCard extends StatelessWidget {
     final hasScore =
         f.status != 'upcoming' && f.homeScore != null && f.awayScore != null;
     final scoreText = hasScore ? '${f.homeScore} - ${f.awayScore}' : 'vs';
+    void open() => Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MatchScreen(
+          matchId: f.matchId,
+          title: '${f.homeName} vs ${f.awayName}',
+        ),
+      ),
+    );
     return Card(
       child: Semantics(
         button: true,
         label:
             '${f.homeName} versus ${f.awayName}, ${statusLabel(f.status)}'
             '${hasScore ? ', score ${f.homeScore} to ${f.awayScore}' : ''}, ${friendlyTime(f.scheduledAt)}. Open match.',
+        // excludeSemantics drops the InkWell's own tap action, so screen readers need it here.
+        onTap: open,
         excludeSemantics: true,
         child: InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => MatchScreen(
-                matchId: f.matchId,
-                title: '${f.homeName} vs ${f.awayName}',
-              ),
-            ),
-          ),
+          onTap: open,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             child: Column(

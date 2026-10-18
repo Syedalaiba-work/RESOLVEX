@@ -118,8 +118,12 @@ class _MatchScreenState extends State<MatchScreen> {
             padding: const EdgeInsets.fromLTRB(12, 18, 12, 22),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Wrap, not Row: on a 360 dp phone with large text the hint moves to a second line
+                // instead of overflowing.
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 6,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(

@@ -126,19 +126,21 @@ class StandingsTable extends StatelessWidget {
     final diff = r.diff is double
         ? (r.diff as double).toStringAsFixed(3)
         : r.diff.toString();
+    void open() => Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ClubScreen(clubId: r.teamId, title: name),
+      ),
+    );
     return Card(
       child: Semantics(
         button: true,
         label:
             'Rank ${r.rank}, $name, ${r.points} points, played ${r.played}, '
             'won ${r.won}, drawn ${r.drawn}, lost ${r.lost}, difference $diff. $statusText. Open club.',
+        onTap: open,
         excludeSemantics: true,
         child: InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ClubScreen(clubId: r.teamId, title: name),
-            ),
-          ),
+          onTap: open,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(

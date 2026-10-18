@@ -45,6 +45,8 @@ def driver():
     o.app_package = PACKAGE
     o.app_activity = ".MainActivity"
     o.no_reset = False  # clean app data: login screen, default server
+    # Always install the APK under test; otherwise Appium keeps an installed build with the same version.
+    o.set_capability("appium:enforceAppInstall", True)
     o.new_command_timeout = 180
     d = webdriver.Remote(APPIUM_URL, options=o)
     REPORTS.mkdir(exist_ok=True)
@@ -89,6 +91,8 @@ def test_03_organizer_signs_in_and_sees_fixtures(driver):
     driver.find_element(*ui('description("Sign in").clickable(true)')).click()
     card = wait(driver, ui('descriptionContains("Alpha United versus Alpha Tigers")'), timeout=40)
     assert "LIVE" in card.get_attribute("content-desc")
+    # D5 regression: the card must expose its tap action to accessibility services (TalkBack).
+    assert card.get_attribute("clickable") == "true"
     wait(driver, ui('descriptionContains("Connection status: Online")'), timeout=20)
     shot(driver, "03-fixtures")
 

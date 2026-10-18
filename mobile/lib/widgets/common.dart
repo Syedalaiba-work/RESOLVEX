@@ -52,7 +52,10 @@ class EntryFade extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 12 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 12 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );
@@ -72,7 +75,10 @@ class AnimatedScore extends StatelessWidget {
     switchOutCurve: Curves.easeIn,
     transitionBuilder: (child, a) => FadeTransition(
       opacity: a,
-      child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(a), child: child),
+      child: ScaleTransition(
+        scale: Tween(begin: 0.85, end: 1.0).animate(a),
+        child: child,
+      ),
     ),
     child: Text(text, key: ValueKey(text), style: style),
   );
@@ -109,14 +115,17 @@ class SyncStatusChip extends StatelessWidget {
             bg = const Color(0xFF0D47A1);
         }
         final label = pending > 0 ? '$text · $pending pending' : text;
+        void open() =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const SyncScreen()));
         return Semantics(
           button: true,
           label: 'Connection status: $label. Tap to open the sync queue.',
+          onTap: open,
           excludeSemantics: true,
           child: InkWell(
             borderRadius: BorderRadius.circular(24),
-            onTap: () => Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const SyncScreen())),
+            onTap: open,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
               child: Center(
