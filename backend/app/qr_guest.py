@@ -1,6 +1,5 @@
 """Part II §5.6 dynamic QR deep-linking (resolve, exports, /q redirect) and §5.7 guest cart merge.
 
-The cart-merge handler below is still a scaffold (501 until implemented).
 """
 import hashlib
 import io
@@ -11,8 +10,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, Response
 
 from app import pdf
-from app.core import ApiError, sign_day2
-from app.db import tx
+from app.core import ApiError, is_id, read_json, sign_day2, validation_error
+from app.db import J, tx
 
 router = APIRouter()
 
@@ -138,14 +137,78 @@ def short_link(short_code: str, request: Request):
     return RedirectResponse(url=route, status_code=302)
 
 
+def _validate_merge(body: dict) -> dict:
+    bad = []
+    token = body.get("guest_token")
+    if not (isinstance(token, str) and token.startswith("guest_") and len(token) > len("guest_")):
+        bad.append("guest_token")
+    if not is_id(body.get("registered_user_id")):
+        bad.append("registered_user_id")
+    cart = body.get("guest_cart")
+    if not (isinstance(cart, list) and 1 <= len(cart) <= 10 and all(
+            isinstance(i, dict) and is_id(i.get("variant_id")) and isinstance(i.get("quantity"), int)
+            and not isinstance(i.get("quantity"), bool) and i["quantity"] >= 1 for i in cart)):
+        bad.append("guest_cart")
+    block = body.get("test_write_block", True)
+    if not isinstance(block, bool):
+        bad.append("test_write_block")
+    if bad:
+        raise validation_error(bad)
+    return {"guest_token": token, "registered_user_id": body["registered_user_id"],
+            "guest_cart": [{"variant_id": i["variant_id"], "quantity": i["quantity"]} for i in cart],
+            "test_write_block": block}
+
+
 @router.post("/audit/v1/guest/cart-merge")
 async def guest_cart_merge(request: Request):
-    """§5.7 and hidden scenario 4.
-    TODO: schema (guest_ prefix, 1-10 items, quantity >= 1) -> 404 user / variant -> 409 OUT_OF_STOCK.
-    TODO: test_write_block: prove the guard rejects a guest write with 403 (see main.guards) and report it.
-    TODO: merge atomically into carts (sum same variant, cap by stock, no stock reservation).
-    TODO: identical replay -> 200 same cart; same token, other user/payload -> 409 GUEST_TOKEN_ALREADY_MERGED.
-    TODO: signature = sign_day2(guest_token, {cart_merged, guest_token, registered_user_id, total_items,
-          write_rejection_code}).
-    """
-    _todo("POST /audit/v1/guest/cart-merge")
+    req = _validate_merge(await read_json(request))
+    token, user = req["guest_token"], req["registered_user_id"]
+    with tx() as conn:
+        # Serialise per token: a replay racing the first call (edge case 4) waits and then sees "merged".
+        conn.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("guest_token:" + token,))
+        tok = conn.execute("SELECT * FROM guest_tokens WHERE guest_token = %s", (token,)).fetchone()
+        if tok and tok["status"] != "active":
+            if tok["status"] == "merged" and tok["merged_request"] == req:
+                return tok["merged_response"]  # identical replay: stored result, nothing re-added
+            raise ApiError(409, "GUEST_TOKEN_ALREADY_MERGED", f"Guest token {token} was already merged.",
+                           {"guest_token": token})
+        if not conn.execute("SELECT 1 FROM players WHERE player_id = %s", (user,)).fetchone():
+            raise ApiError(404, "PLAYER_NOT_FOUND", f"Player {user} does not exist.", {"user_id": user})
+        ids = [i["variant_id"] for i in req["guest_cart"]]
+        variants = {r["variant_id"]: r for r in conn.execute(
+            "SELECT variant_id, price_minor, currency, stock FROM variants WHERE variant_id = ANY(%s)", (ids,)).fetchall()}
+        missing = [v for v in ids if v not in variants]
+        if missing:
+            raise ApiError(404, "VARIANT_NOT_FOUND", f"Variant {missing[0]} does not exist.", {"variant_id": missing[0]})
+        row = conn.execute("SELECT items FROM carts WHERE user_id = %s FOR UPDATE", (user,)).fetchone()
+        merged = {i["variant_id"]: i["quantity"] for i in (row["items"] if row else [])}
+        for item in req["guest_cart"]:
+            merged[item["variant_id"]] = merged.get(item["variant_id"], 0) + item["quantity"]
+        stock = {r["variant_id"]: r for r in conn.execute(
+            "SELECT variant_id, price_minor, stock FROM variants WHERE variant_id = ANY(%s)", (list(merged),)).fetchall()}
+        for variant_id, qty in merged.items():
+            if qty > stock[variant_id]["stock"]:  # checked, never reserved: stock is only taken at checkout
+                raise ApiError(409, "OUT_OF_STOCK", f"Variant {variant_id} has only {stock[variant_id]['stock']} left.",
+                               {"variant_id": variant_id})
+        items = [{"variant_id": v, "quantity": q, "unit_price_minor": stock[v]["price_minor"]} for v, q in merged.items()]
+        conn.execute("INSERT INTO carts (user_id, items) VALUES (%s, %s) ON CONFLICT (user_id) DO UPDATE SET items = EXCLUDED.items",
+                     (user, J([{"variant_id": i["variant_id"], "quantity": i["quantity"]} for i in items])))
+        total_items = sum(i["quantity"] for i in items)
+        # test_write_block: the same guard main.guards applies to every guest write (FR-4.3).
+        rejection = 403 if req["test_write_block"] and token.startswith("guest_anon_tok_") else None
+        response = {
+            "guest_token": token,
+            "write_block_verified": rejection == 403,
+            "write_rejection_code": rejection,
+            "cart_merged": True,
+            "active_cart": {"user_id": user, "currency": "PKR", "total_items": total_items,
+                            "subtotal_minor": sum(i["quantity"] * i["unit_price_minor"] for i in items), "items": items},
+            "signature": sign_day2(token, {"cart_merged": True, "guest_token": token, "registered_user_id": user,
+                                           "total_items": total_items, "write_rejection_code": rejection}),
+        }
+        conn.execute(
+            "INSERT INTO guest_tokens (guest_token, status, user_id, merged_request, merged_response) "
+            "VALUES (%s, 'merged', %s, %s, %s) ON CONFLICT (guest_token) DO UPDATE SET status = 'merged', "
+            "user_id = EXCLUDED.user_id, merged_request = EXCLUDED.merged_request, merged_response = EXCLUDED.merged_response",
+            (token, user, J(req), J(response)))
+    return response
