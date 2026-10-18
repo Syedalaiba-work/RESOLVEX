@@ -6,3 +6,10 @@ services:
   api:
     ports: !override
       - "127.0.0.1:18080:8080"
+  # The QA copy runs the same Part II services, without host ports, so it never collides with the
+  # submission stack or the separate test grid (qa/selenium) on 4444.
+  media:
+    ports: !reset []
+  selenium-hub:
+    container_name: nascon-qa-selenium-hub
+    ports: !reset []

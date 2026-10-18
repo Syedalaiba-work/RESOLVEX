@@ -1,4 +1,10 @@
-# Part II root `docker-compose.yml` — structural plan (team writes the file)
+# Part II root `docker-compose.yml` — plan and status
+
+**Status 2026-10-18 12:45 PKT:** redis, media (MediaMTX), selenium-hub and 3 nodes are now in the root file and
+validated (QA project, ports stripped): `/health` 200 with Redis + MediaMTX probes, hub ready with 3 nodes,
+271 backend tests passed. **MinIO is BLOCKED:** `minio/minio:RELEASE.2024-09-22T00-33-43Z` → Docker Hub
+"pull access denied"; `quay.io/minio/minio` → 401. It is a commented placeholder in the root file so the
+stack still starts. Needs a team decision (organiser-provided image / tarball, or `docker login`).
 
 Source: Part II §1.3, §5.2, §6.1, §6.2.1, §7.3 and checklist C. The existing `db`, `api` and `worker` services
 stay as they are (both salts are already forwarded). Add the services below to the **root** file: the GitHub

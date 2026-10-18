@@ -1,5 +1,10 @@
 """HTTP layer: maps the /audit/v1/* contract (spec section 5) onto the domain modules."""
 import logging
+import os
+import socket
+import urllib.error
+import urllib.parse
+import urllib.request
 import threading
 import time
 from collections import defaultdict, deque
@@ -133,6 +138,29 @@ async def guards(request: Request, call_next):
 
 # --- 5.4 health / 5.5 reset / 5.6 sports -----------------------------------------------------------
 
+def _redis_ok(url: str) -> bool:
+    """RESP PING over a raw socket (no client library needed)."""
+    u = urllib.parse.urlsplit(url)
+    try:
+        with socket.create_connection((u.hostname, u.port or 6379), timeout=1.0) as c:
+            c.sendall(b"PING\r\n")
+            return c.recv(16).startswith(b"+PONG")
+    except OSError:
+        return False
+
+
+def _media_ok(url: str) -> bool:
+    """Any HTTP answer from MediaMTX's control API means the server is up. By default it returns
+    401 to non-local callers, which we keep rather than opening the API to the network."""
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/v3/paths/list", timeout=1.0):
+            return True
+    except urllib.error.HTTPError:
+        return True
+    except (OSError, ValueError):
+        return False
+
+
 @app.get("/health")
 def health():
     try:
@@ -142,6 +170,11 @@ def health():
         ready = False
     if not ready:
         return error_response(503, "NOT_READY", "Database unreachable or baseline data not seeded.")
+    # Part II 5.1: Redis and the media server too, wherever the stack configures them.
+    failed = [name for name, env, probe in (("redis", "REDIS_URL", _redis_ok), ("media", "MEDIA_API_URL", _media_ok))
+              if os.environ.get(env) and not probe(os.environ[env])]
+    if failed:
+        return error_response(503, "NOT_READY", "A required service is not reachable.", {"failed": failed})
     return {"status": "ok"}
 
 
