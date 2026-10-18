@@ -11,3 +11,10 @@ mobile/**/build/
 mobile/**/.dart_tool/
 mobile/**/.gradle/
 mobile/**/local.properties
+
+# QA tooling (local installs and logs)
+qa/.venv/
+qa/appium/node_modules/
+qa/appium/.appium/
+qa/reports/appium-server.log
+qa/reports/*-source.xml

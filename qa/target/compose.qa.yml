@@ -1,0 +1,8 @@
+# Disposable QA copy of the backend. Use together with the main compose file:
+#   DAY1_SALT=qa-only-salt docker compose -p nascon-qa -f docker-compose.yml -f qa/target/compose.qa.yml up -d --build
+# Same images and code as the submission, but its own project name, network (nascon-qa_default) and
+# database volume, so tests may mutate it freely. The API is published on localhost only.
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:18080:8080"

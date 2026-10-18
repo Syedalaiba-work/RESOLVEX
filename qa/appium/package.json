@@ -1,0 +1,12 @@
+{
+  "name": "resolvex-appium",
+  "private": true,
+  "description": "Appium 2 + UiAutomator2, installed locally (APPIUM_HOME=qa/appium/.appium).",
+  "scripts": {
+    "server": "appium --address 127.0.0.1 --port 4723 --log-level info",
+    "doctor": "appium driver doctor uiautomator2"
+  },
+  "devDependencies": {
+    "appium": "2.19.0"
+  }
+}

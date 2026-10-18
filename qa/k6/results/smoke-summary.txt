@@ -1,0 +1,6 @@
+k6 smoke (3 VUs) profile against http://api:8080
+  requests:     436 (14.12 req/s)
+  latency:      median 10.6 ms, p95 26.8 ms, max 39.6 ms
+  http failed:  0.00 %
+  checks:       100.00 % passed (435 / 435)
+  thresholds:   http_req_failed OK, checks OK, http_req_duration OK
