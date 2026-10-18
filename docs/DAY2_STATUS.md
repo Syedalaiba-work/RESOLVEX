@@ -18,7 +18,8 @@ Source of truth: *App Dev Day 2 Problem Statement.pdf*. "Passed" = ran and passe
 | Flutter `analyze` / tests | local | clean / 20 passed |
 | NFR-1 25-client WebSocket probe (`qa/probes/nfr1_ws_probe.py`) | QA stack over the network | p95 122–142 ms (3 runs), gauge 25 during / 0 after |
 | k6 read-only smoke (`qa/k6/smoke.js`) | QA stack | 435/435 checks, 0 % failed, p95 15.6 ms |
-| `tests/k6_load.js` (NFR-2, 500 + 50 VUs, 15 s) | QA stack on this laptop | **0.00 % failed**, 12310/12310 checks; **p95 1.49 s — 800 ms threshold not met locally** (single uvicorn worker, shared laptop); not yet seen on GitHub Actions |
+| `tests/k6_load.js` (NFR-2, 500 + 50 VUs, 15 s) | QA stack on this laptop | **0.00 % failed**, 12310/12310 checks; **p95 1.49 s — 800 ms threshold not met** (single uvicorn worker) |
+| GitHub Actions run 39112964668 (`ba21624`) | clean ubuntu-latest | every step passed except **k6 load profile (NFR-2): failure** (job log needs GitHub login; consistent with the local p95) |
 
 ## Coverage (`COVERAGE_DAY2.json`, measured 13:35 PKT from the 315-test run)
 
@@ -31,8 +32,8 @@ Source of truth: *App Dev Day 2 Problem Statement.pdf*. "Passed" = ran and passe
 | §5.4–5.8 handlers | **Implemented** — every contract test passes (stream key 6, co-stream 8, QR 10, cart merge 8, moderation 9) |
 | NFR-2 p95 < 800 ms under 550 VUs | Not met on this laptop (p95 1.49 s, 0 % errors) |
 | Chat rate limit (> 3 messages / 2 s per sender) | Not implemented |
-| `DAY2_SALT` in `.env` | **Missing** — must be added from the venue slip |
-| GitHub Actions secrets `DAY1_SALT`, `DAY2_SALT` | Not verifiable from here |
+| `DAY2_SALT` in `.env` | Configured locally 13:53 PKT (16 chars, `.env` git-ignored). With it: 41 contract + 5 signature tests passed; app signature = Appendix A recipe |
+| GitHub Actions secrets `DAY1_SALT`, `DAY2_SALT` | **Not configured from here** (no GitHub API credentials on this machine); must be set in Settings → Secrets → Actions |
 | MinIO, stream recording, VOD indexing | **Blocked** — image cannot be pulled (Docker Hub denied, quay.io 401); no recording/VOD support claimed |
 | Stream-key revocation severing live ingest within 2 s (MediaMTX auth hook) | Not implemented (depends on §5.4) |
 | Deep-link cold start ≤ 2 s | Missed on the emulator (~2.9–3.1 s); warm 465–492 ms |
