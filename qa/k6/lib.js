@@ -35,7 +35,7 @@ export function readOnlyMix(token) {
   });
   group('mobile api (rate limited 100 req / 10 s per IP)', () => {
     const f = http.get(`${BASE_URL}/api/v1/fixtures`, Object.assign({ tags: { name: 'GET /api/v1/fixtures' } }, auth));
-    check(f, { 'fixtures 200 (6)': (r) => r.status === 200 && r.json().length === 6 });
+    check(f, { 'fixtures 200 (7: six demo + Part II match-m1)': (r) => r.status === 200 && r.json().length === 7 });
   });
   sleep(1);
 }
