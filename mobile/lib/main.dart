@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'screens/deep_link_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
 import 'services/app_state.dart';
@@ -36,6 +37,8 @@ class LeagueApp extends StatelessWidget {
           title: 'NaSCon League',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(state),
+          // nascon:// links arrive as the initial route (Part II §6.3).
+          onGenerateRoute: deepLinkRoute,
           home: !state.ready
               ? const Scaffold(body: LoadingView(message: 'Starting...'))
               : state.loggedIn

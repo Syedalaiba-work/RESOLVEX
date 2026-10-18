@@ -138,6 +138,27 @@ void main() {
     },
   );
 
+  for (final link in [
+    ('/match-m1', 'Match live: match-m1'),
+    ('/cs-session-101', 'Co-stream: cs-session-101'),
+  ]) {
+    testWidgets('deep link ${link.$1} opens its screen without the login wall', (
+      tester,
+    ) async {
+      tester.binding.platformDispatcher.defaultRouteNameTestValue = link.$1;
+      addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+      final app = await start(tester); // nobody is signed in
+      expect(find.bySemanticsLabel(link.$2), findsOneWidget);
+      if (link.$1 == '/match-m1') {
+        expect(find.text('1 - 0'), findsOneWidget);
+        expect(find.text('Alpha United'), findsOneWidget);
+      }
+      expect(find.byKey(const Key('signin')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await finish(tester, app);
+    });
+  }
+
   testWidgets('wrong password shows a plain-language error', (tester) async {
     final app = await start(tester);
     await tester.enterText(

@@ -91,6 +91,17 @@ class FakeBackend {
       headers: {'content-type': 'application/json'},
     );
     if (path == '/api/v1/ping') return json({'pong': true});
+    if (path == '/web/api/matches/match-m1') {
+      return json({
+        'match_id': 'match-m1',
+        'status': 'in_progress',
+        'version': 3,
+        'home': {'team_id': 'club-alpha-1', 'name': 'Alpha United', 'score': 1},
+        'away': {'team_id': 'club-alpha-2', 'name': 'Alpha Rovers', 'score': 0},
+        'score_text': '1 - 0',
+        'pinned_product': null,
+      });
+    }
     if (path == '/api/v1/auth/login') {
       final b = jsonDecode(req.body) as Map;
       if (b['password'] != 'Nascon@26') {
