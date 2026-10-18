@@ -8,7 +8,7 @@ import json
 import pathlib
 import secrets
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -87,6 +87,38 @@ async def match_stream(match_id: str, request: Request):
 
     return StreamingResponse(events(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@router.websocket("/ws/matches/{match_id}")
+async def match_ws(ws: WebSocket, match_id: str):
+    """NFR-1: same payload as the SSE stream, pushed whenever the match's event log grows."""
+    await ws.accept()
+    try:
+        current = await run_in_threadpool(match_summary, match_id)
+    except ApiError as e:
+        await ws.send_json({"error": {"code": e.code, "message": e.message, "details": e.details}})
+        await ws.close(code=4404)
+        return
+    observability.ws_connected(+1)
+    try:
+        last = None
+        while True:
+            if current["version"] != last:
+                last = current["version"]
+                await ws.send_json(current)
+            try:  # wait briefly for a client frame; this is also how a disconnect is noticed
+                await asyncio.wait_for(ws.receive_text(), timeout=SSE_POLL_S)
+            except asyncio.TimeoutError:
+                pass
+            try:
+                current = await run_in_threadpool(match_summary, match_id)
+            except ApiError:
+                await ws.close(code=4404)
+                return
+    except WebSocketDisconnect:
+        pass
+    finally:
+        observability.ws_connected(-1)
 
 
 @router.get("/web/{path:path}", response_class=HTMLResponse)

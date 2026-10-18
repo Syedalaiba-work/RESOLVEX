@@ -1,5 +1,6 @@
 fastapi==0.115.12
 uvicorn==0.34.3
+websockets==13.1  # WebSocket transport for uvicorn (Part II NFR-1 ws://.../ws/matches/{id})
 psycopg[binary]==3.2.9
 psycopg-pool==3.2.6
 PyJWT==2.10.1
