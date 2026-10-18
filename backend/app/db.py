@@ -78,12 +78,43 @@ CREATE TABLE IF NOT EXISTS roster_requests (
 CREATE TABLE IF NOT EXISTS sync_actions (
     device_id TEXT NOT NULL, action_id TEXT NOT NULL, result JSONB NOT NULL,
     PRIMARY KEY (device_id, action_id));
+
+-- ---- Phase II (Day 2) -------------------------------------------------------------------------
+-- Stream keys (Part II 5.4). One active key per player at a time.
+CREATE TABLE IF NOT EXISTS stream_keys (
+    stream_key TEXT PRIMARY KEY, player_id TEXT NOT NULL, label TEXT NOT NULL, status TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), revoked_at TIMESTAMPTZ);
+-- Co-stream sessions (5.5): the accepted request and stored response, for idempotent replay.
+CREATE TABLE IF NOT EXISTS costream_sessions (
+    session_id TEXT PRIMARY KEY, request JSONB NOT NULL, response JSONB NOT NULL);
+-- Dynamic QR mappings (5.6). short_code never changes; the target route is computed at scan time.
+CREATE TABLE IF NOT EXISTS qr_codes (
+    entity_id TEXT PRIMARY KEY, entity_type TEXT NOT NULL, short_code TEXT NOT NULL UNIQUE,
+    scan_count INT NOT NULL DEFAULT 0);
+-- Privacy-safe scan telemetry (NFR-9): no IP, no User-Agent string, no fingerprint.
+CREATE TABLE IF NOT EXISTS qr_scans (
+    entity_id TEXT NOT NULL, device_family TEXT NOT NULL, bucket TIMESTAMPTZ NOT NULL);
+-- Guest tokens and carts (5.7). merged_* hold the first successful merge for idempotent replay.
+CREATE TABLE IF NOT EXISTS guest_tokens (
+    guest_token TEXT PRIMARY KEY, status TEXT NOT NULL, user_id TEXT,
+    merged_request JSONB, merged_response JSONB);
+CREATE TABLE IF NOT EXISTS carts (user_id TEXT PRIMARY KEY, items JSONB NOT NULL);
+-- Moderation (5.8): the primary key makes concurrent kick/mute of one user idempotent (edge case 3).
+CREATE TABLE IF NOT EXISTS moderation_actions (
+    chat_room_id TEXT NOT NULL, user_id TEXT NOT NULL, action TEXT NOT NULL,
+    created_order BIGSERIAL, PRIMARY KEY (chat_room_id, user_id, action));
+-- Notification dead-letter queue (FR-5.2).
+CREATE TABLE IF NOT EXISTS notification_dlq (
+    id BIGSERIAL PRIMARY KEY, event JSONB NOT NULL, attempts INT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 """
 
 ALL_TABLES = [
     "meta", "tenants", "sports", "leagues", "clubs", "players", "users", "standings_leagues",
     "matches", "events", "products", "variants", "orders", "payments", "domain_events", "roster_leagues",
     "roster_audit", "roster_requests", "sync_actions",
+    "stream_keys", "costream_sessions", "qr_codes", "qr_scans", "guest_tokens", "carts",
+    "moderation_actions", "notification_dlq",
 ]
 
 

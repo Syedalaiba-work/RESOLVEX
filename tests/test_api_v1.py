@@ -23,7 +23,7 @@ def test_requires_token(api):
 def test_fixtures_matches_and_standings_for_viewer(api):
     h = login(api, "viewer")
     fx = api.get("/api/v1/fixtures", headers=h).json()
-    assert len(fx) == 6
+    assert len(fx) == 7  # six demo fixtures + Part II 5.2 match-m1 (league-alpha-1, in progress)
     statuses = {f["match_id"]: f["status"] for f in fx}
     assert statuses["la1-m1"] == "completed" and statuses["la1-m5"] == "in_progress" and statuses["la1-m6"] == "upcoming"
     m1 = next(f for f in fx if f["match_id"] == "la1-m1")

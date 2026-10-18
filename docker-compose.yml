@@ -22,6 +22,7 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       DAY1_SALT: ${DAY1_SALT}
+      DAY2_SALT: ${DAY2_SALT}
       DATABASE_URL: postgresql://${POSTGRES_USER:-nascon}:${POSTGRES_PASSWORD:-nascon_local_dev}@db:5432/${POSTGRES_DB:-nascon}
       JWT_SECRET: ${JWT_SECRET:-}
     ports:
@@ -44,6 +45,7 @@ services:
     command: ["python", "-m", "app.worker"]
     environment:
       DAY1_SALT: ${DAY1_SALT}
+      DAY2_SALT: ${DAY2_SALT}
       DATABASE_URL: postgresql://${POSTGRES_USER:-nascon}:${POSTGRES_PASSWORD:-nascon_local_dev}@db:5432/${POSTGRES_DB:-nascon}
     depends_on:
       db:

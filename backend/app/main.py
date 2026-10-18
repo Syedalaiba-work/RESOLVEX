@@ -12,7 +12,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import api_v1, demo, fixtures, rbac, roster, scoring, seed, sports, standings, store, sync
+from app import api_v1, demo, fixtures, phase2_seed, rbac, roster, scoring, seed, sports, standings, store, sync
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -37,6 +37,7 @@ app.include_router(api_v1.router)
 def full_reset(seed_value, stock):
     result = seed.reset(seed_value, stock)
     demo.seed_demo()  # mobile desk-check data, rebuilt through the normal domain services
+    phase2_seed.seed_day2()  # Part II 5.2 baseline (match-m1, QR mappings, guest token, cart)
     return result
 
 
@@ -90,11 +91,30 @@ def _rate_limited(client_ip: str) -> float | None:
         return None
 
 
+WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+GUEST_TOKEN_PREFIX = "guest_anon_tok_"
+# Writes a guest may make (guest cart staging); everything else is read-only for guests.
+GUEST_WRITE_ALLOWED: set[str] = set()
+
+
+def _guest_token(request: Request) -> str | None:
+    auth = request.headers.get("authorization", "")
+    scheme, _, token = auth.partition(" ")
+    token = token.strip()
+    return token if scheme.lower() == "bearer" and token.startswith(GUEST_TOKEN_PREFIX) else None
+
+
 @app.middleware("http")
 async def guards(request: Request, call_next):
     length = request.headers.get("content-length")
     if length and length.isdigit() and int(length) > MAX_BODY_BYTES:
         return error_response(413, "PAYLOAD_TOO_LARGE", "Request body exceeds 1 MB.")
+    guest = _guest_token(request)
+    if guest and request.method in WRITE_METHODS and request.url.path not in GUEST_WRITE_ALLOWED:
+        # Part II FR-4.3: enforced server-side, before body validation or routing.
+        return error_response(403, "GUEST_WRITE_FORBIDDEN",
+                              "Anonymous guest tokens cannot perform write mutations.",
+                              {"guest_token": guest})
     if request.url.path.startswith("/api/v1/"):
         client_ip = request.client.host if request.client else "unknown"
         wait_s = _rate_limited(client_ip)

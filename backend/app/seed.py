@@ -44,6 +44,7 @@ PLAYERS = [
     ("player-alpha-1", "tenant-alpha", "club-alpha-1", "Ahmed Raza", "gk", "captain"),
     ("player-alpha-2", "tenant-alpha", "club-alpha-2", "Bilal Shah", "fw", "starter"),
     ("player-beta-1", "tenant-beta", "club-beta-1", "Faisal Noor", "df", "starter"),
+    ("player-beta-2", "tenant-beta", "club-beta-1", "Hassan Iqbal", "mf", "starter"),  # Part II 5.2
 ]
 USERS = [
     # email, role, tenant, league, club, player, display name

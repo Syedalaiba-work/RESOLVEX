@@ -120,6 +120,16 @@ def sign(id_: str, payload_obj, key: str | None = None) -> str:
     return hmac.new((salt() if key is None else key).encode("utf-8"), message, hashlib.sha256).hexdigest()
 
 
+def day2_salt() -> str:
+    # Part II §1.2/§7.3: read from the environment at call time; never hard-coded or committed.
+    return os.environ.get("DAY2_SALT", "")
+
+
+def sign_day2(entity_id: str, sig_payload: dict) -> str:
+    """Part II §5.3: same recipe as Day 1 (entity_id + "|" + canonical), keyed with DAY2_SALT."""
+    return sign(entity_id, sig_payload, key=day2_salt())
+
+
 def lots_key(seed: int, league_id: str, team_id: str) -> str:
     return hashlib.sha256(f"{seed}|{league_id}|{team_id}".encode("utf-8")).hexdigest()
 

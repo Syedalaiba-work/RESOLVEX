@@ -36,3 +36,25 @@ Backend tests are in `tests/` (run with `./run_tests.sh`); mobile tests are in `
 | `POST /audit/v1/rbac-matrix`, `/audit/v1/rbac/*` (7 probes) | `main.rbac_matrix`, `main.probe_*` | `rbac` |
 | `GET /api/v1/ping` | `main.ping` | rate limiter in `main.guards` |
 | `POST /audit/v1/offline-sync` | `main.offline_sync` | `sync` |
+
+## Part II (Day 2) — source: *App Dev Day 2 Problem Statement.pdf*
+
+Status as of the commit that last edited this table. *Done* = code + passing automated test; *Scaffold* = route
+or schema exists, business logic still to be written; *Missing* = not started.
+
+| ID | Requirement (Part II section) | Source files | Automated tests | Status |
+|---|---|---|---|---|
+| P2-SALT | `DAY2_SALT` from env only; `HMAC(DAY2_SALT, entity_id + "\|" + canonical)` (§1.2, §5.3, App. A) | `core.day2_salt`, `core.sign_day2`; `docker-compose.yml`; `.env.example` | `test_day2_foundation.py` (Appendix A vectors 1–2 vs reference, env-driven key, no salt literal in source) | Done |
+| P2-RESET | Reset seeds `player-beta-2`, `match-m1` (in_progress 1–0), QR mappings, `guest_anon_tok_7721`, empty cart (§5.2) | `phase2_seed.py`, `seed.PLAYERS`, `db.SCHEMA` (Phase II tables), `main.full_reset` | `test_day2_foundation.py::test_reset_seeds_phase2_baseline`, `::test_reset_is_repeatable_with_phase2_state` | Done |
+| FR-4.3 | Guest tokens rejected on every write with 403 `GUEST_WRITE_FORBIDDEN` (§3.2, §5.7 direct check, §7.3) | `main.guards`, `main._guest_token` | `test_day2_guest_guard.py` (chat / checkout / events, PUT/PATCH/DELETE, precedes validation, no side effects, reads allowed, Day 1 unauthenticated writes unchanged) | Done |
+| FR-3.2 / §5.4 | Stream key generate / rotate / revoke | — | — | Missing |
+| FR-3.3 / §5.5 | 4-way co-stream session + host handoff | `db` table `costream_sessions` | — | Scaffold (schema) |
+| FR-4.1 / §5.6 | Dynamic QR resolve, exports, `/q/{code}` 302, scan telemetry | `db` tables `qr_codes`, `qr_scans`; seed | — | Scaffold (schema + seed) |
+| FR-4.4 / §5.7 | Guest cart merge (idempotent, stock-capped) | `db` tables `guest_tokens`, `carts`; seed | — | Scaffold (schema + seed) |
+| FR-5.3 / FR-5.2 / §5.8 | Moderation (leetspeak, flood), kick/mute idempotency, DLQ | `db` tables `moderation_actions`, `notification_dlq` | — | Scaffold (schema) |
+| NFR-6 / §5.9 | `GET /metrics` Prometheus text | — | — | Missing |
+| NFR-9 / §5.9 | `DELETE /audit/v1/privacy/user/{id}` | — | — | Missing |
+| NFR-1 | WS/SSE score broadcast, p95 < 500 ms | — | — | Missing |
+| §6 | Selenium Grid (≥3 nodes), Appium deep links, k6 550 VU, GitHub Actions, reports, `COVERAGE_DAY2.json` | `qa/` (Day 2 morning tooling, to move to `tests/`) | `qa/selenium`, `qa/appium`, `qa/k6` | Partial |
+| §1.1 / §6.2.2 | Guest Web Player `/web/*` with 9 `data-testid`s, WCAG AA | — | — | Missing |
+| §6.3 | Android `nascon://` intent-filter + deep-link screens | — | — | Missing |
