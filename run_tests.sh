@@ -10,3 +10,4 @@ docker compose up -d --build db api
 docker compose exec -T api python -m pytest -q --cov=backend/app --cov-config=.coveragerc \
   --cov-report=term --cov-report=json:/tmp/coverage.json "$@"
 docker compose exec -T api python backend/tools/coverage_by_area.py /tmp/coverage.json
+docker compose exec -T api python backend/tools/coverage_by_area.py /tmp/coverage.json --day2

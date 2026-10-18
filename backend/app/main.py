@@ -12,8 +12,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import (api_v1, demo, fixtures, observability, phase2_routes, phase2_seed, rbac, roster, scoring,
-                 seed, sports, standings, store, sync, web)
+from app import (api_v1, costream, demo, fixtures, moderation_dlq, observability, phase2_seed, qr_guest, rbac,
+                 roster, scoring, seed, sports, standings, store, streaming, sync, web)
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -33,7 +33,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NaSCon League Platform", lifespan=lifespan)
 app.include_router(api_v1.router)
-app.include_router(phase2_routes.router)  # Part II restricted handlers (scaffold: 501 until implemented)
+# Part II restricted handlers (scaffolds answering 501 until the team implements them)
+for _m in (streaming, costream, qr_guest, moderation_dlq):
+    app.include_router(_m.router)
 app.include_router(web.router)  # Guest Web Player, SSE score stream, guest sessions
 
 
