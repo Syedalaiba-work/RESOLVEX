@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NaSCon Live — Guest Player</title>
+<style>
+  :root { --canvas:#F7F6F2; --surface:#FFFFFF; --border:#E2E0D8; --ink:#1C1F23; --muted:#4A4F55;
+          --lime:#C5F036; --green:#2F5200; --danger:#B3261E; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink); font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header, main { max-width: 960px; margin: 0 auto; padding: 16px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  h1 { font-size: 1.25rem; margin: 0; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:16px; margin-bottom:16px; }
+  .grid { display:grid; gap:16px; grid-template-columns: 1fr; }
+  @media (min-width: 840px) { .grid { grid-template-columns: 2fr 1fr; } }
+  .hero { background:var(--ink); color:#fff; border-radius:24px; padding:16px; }
+  video { width:100%; aspect-ratio:16/9; background:#000; border-radius:16px; display:block; }
+  .score { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; margin-top:12px; font-weight:700; }
+  .score [data-testid="live-score-banner"] { font-size:2.25rem; color:var(--lime); font-weight:900; min-width:4ch; text-align:center; }
+  .status { display:inline-block; border-radius:999px; padding:2px 10px; background:#fff; color:var(--danger); font-weight:800; font-size:.8rem; }
+  button { min-height:48px; min-width:48px; padding:0 20px; border-radius:999px; border:0; font:inherit; font-weight:700; cursor:pointer; }
+  button.primary { background:var(--lime); color:var(--ink); }
+  button.secondary { background:var(--surface); color:var(--ink); border:1px solid #B9B6AC; }
+  button:focus-visible, input:focus-visible { outline:3px solid var(--green); outline-offset:2px; }
+  .cart { display:inline-flex; align-items:center; gap:8px; min-height:48px; padding:0 14px; border-radius:999px; background:var(--surface); border:1px solid var(--border); font-weight:700; }
+  .price { color:var(--muted); }
+  #chat { list-style:none; margin:0 0 12px; padding:0; height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:14px; }
+  #chat li { padding:8px 12px; border-bottom:1px solid var(--border); }
+  .chat-row { display:flex; gap:8px; }
+  .chat-row input { flex:1; min-height:48px; border-radius:14px; border:1px solid #B9B6AC; padding:0 12px; font:inherit; }
+  .notice { color:var(--muted); }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  #auth-backdrop { position:fixed; inset:0; background:rgba(28,31,35,.55); display:none; align-items:center; justify-content:center; padding:16px; }
+  #auth-backdrop.open { display:flex; }
+  [data-testid="progressive-auth-modal"] { background:var(--surface); border-radius:20px; padding:24px; max-width:420px; width:100%; }
+  .modal-actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="page-title">NaSCon Live</h1>
+  <span class="cart" aria-live="polite">Cart <span data-testid="guest-cart-count" id="cart-count">0</span><span class="sr-only"> items</span></span>
+</header>
+<main>
+  <div class="grid">
+    <section class="hero" aria-labelledby="page-title">
+      <video data-testid="guest-video-player" id="player" controls muted playsinline
+             aria-label="Live match video player" poster=""></video>
+      <div class="score">
+        <span id="home-name">Home</span>
+        <span data-testid="live-score-banner" id="score" role="status" aria-live="polite" aria-label="Live score">–</span>
+        <span id="away-name">Away</span>
+      </div>
+      <p class="score"><span class="status" id="match-status">Loading…</span></p>
+    </section>
+    <section class="card" data-testid="pinned-merch-card" id="merch" aria-labelledby="merch-title">
+      <h2 id="merch-title" style="font-size:1.1rem;margin:0 0 4px">Pinned merchandise</h2>
+      <p id="merch-name" style="margin:0 0 4px;font-weight:700">Alpha United Home Jersey</p>
+      <p class="price" id="merch-price">Size L · PKR 4,500.00</p>
+      <button class="primary" data-testid="add-to-guest-cart-btn" id="add-cart" type="button">Add to cart</button>
+    </section>
+  </div>
+  <section class="card" aria-labelledby="chat-title">
+    <h2 id="chat-title" style="font-size:1.1rem;margin:0 0 8px">Live chat</h2>
+    <ul data-testid="chat-message-list" id="chat" role="log" aria-live="polite" aria-label="Chat messages" tabindex="0"></ul>
+    <form class="chat-row" id="chat-form">
+      <label for="chat-input" class="sr-only">Chat message</label>
+      <input data-testid="chat-input-field" id="chat-input" type="text" maxlength="200" placeholder="Say something…" autocomplete="off">
+      <button class="primary" data-testid="chat-send-btn" id="chat-send" type="submit">Send</button>
+    </form>
+    <p class="notice" id="notice" role="status"></p>
+  </section>
+</main>
+<div id="auth-backdrop">
+  <div data-testid="progressive-auth-modal" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" aria-describedby="auth-desc" hidden>
+    <h2 id="auth-title" style="margin-top:0">Sign in to continue</h2>
+    <p id="auth-desc">Guests can watch and build a cart. To chat or check out, sign in or create an account — your cart (<span id="auth-cart">0</span> items) is kept.</p>
+    <div class="modal-actions">
+      <button class="primary" id="auth-login" type="button">Sign in or register</button>
+      <button class="secondary" id="auth-close" type="button">Not now</button>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const parts = location.pathname.split('/').filter(Boolean);   // web, kind, id, view
+  const kind = parts[1], entityId = parts[2], view = parts[3] || '';
+  const matchId = kind === 'matches' ? entityId : 'match-m1';
+  let guestToken = null, cart = [], lastFocus = null;
+
+  const money = (minor) => 'PKR ' + (minor / 100).toLocaleString('en-PK', { minimumFractionDigits: 2 });
+  const statusText = { in_progress: 'LIVE', upcoming: 'Upcoming', completed: 'Full time' };
+
+  function renderScore(m) {
+    $('score').textContent = m.score_text;
+    $('home-name').textContent = m.home.name;
+    $('away-name').textContent = m.away.name;
+    $('match-status').textContent = statusText[m.status] || m.status;
+    document.title = `${m.home.name} ${m.score_text} ${m.away.name} — NaSCon Live`;
+  }
+
+  function setCart(items) {
+    cart = items;
+    const n = cart.reduce((s, i) => s + i.quantity, 0);
+    $('cart-count').textContent = String(n);
+    $('auth-cart').textContent = String(n);
+    try { localStorage.setItem('guest_cart:' + guestToken, JSON.stringify(cart)); } catch (e) {}
+  }
+
+  function openModal() {
+    lastFocus = document.activeElement;
+    $('auth-backdrop').classList.add('open');
+    $('auth-modal').hidden = false;
+    $('auth-login').focus();
+  }
+  function closeModal() {
+    $('auth-backdrop').classList.remove('open');
+    $('auth-modal').hidden = true;
+    if (lastFocus) lastFocus.focus();
+  }
+  $('auth-close').addEventListener('click', closeModal);
+  $('auth-login').addEventListener('click', () => { $('auth-desc').textContent = 'Use the NaSCon app or your member account to sign in; your cart stays saved on this device.'; });
+  document.addEventListener('keydown', (e) => {
+    if ($('auth-modal').hidden) return;
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Tab') {               // keep focus inside the dialog
+      const f = [$('auth-login'), $('auth-close')];
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+
+  $('add-cart').addEventListener('click', () => {
+    const items = cart.slice();
+    const line = items.find((i) => i.variant_id === 'var-jersey-001-L');
+    if (line) line.quantity += 1; else items.push({ variant_id: 'var-jersey-001-L', quantity: 1 });
+    setCart(items);
+    $('notice').textContent = 'Added to your guest cart.';
+  });
+
+  $('chat-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = $('chat-input').value.trim();
+    if (!text) return;
+    const r = await fetch('/api/v1/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + guestToken },
+      body: JSON.stringify({ chat_room_id: 'chat-' + matchId, text }),
+    });
+    if (r.status === 403) { openModal(); return; }          // server-enforced guest read-only boundary
+    if (r.ok) {
+      const li = document.createElement('li');
+      li.textContent = text;
+      $('chat').appendChild(li);
+      $('chat-input').value = '';
+    } else {
+      $('notice').textContent = 'Message could not be sent. Please try again.';
+    }
+  });
+
+  async function start() {
+    const s = await fetch('/api/v1/guest/session', { method: 'POST' });
+    guestToken = (await s.json()).guest_token;
+    try { setCart(JSON.parse(localStorage.getItem('guest_cart:' + guestToken) || '[]')); } catch (e) { setCart([]); }
+    if (kind === 'matches' && view === 'notice') {
+      $('notice').textContent = 'This match is ' + (new URLSearchParams(location.search).get('state') || 'unavailable') + '.';
+    }
+    const r = await fetch('/web/api/matches/' + encodeURIComponent(matchId));
+    if (r.ok) {
+      const m = await r.json();
+      renderScore(m);
+      if (m.pinned_product) {
+        const v = m.pinned_product.variants.find((x) => x.variant_id === 'var-jersey-001-L') || m.pinned_product.variants[0];
+        $('merch-name').textContent = m.pinned_product.name;
+        $('merch-price').textContent = 'Size ' + v.label + ' · ' + money(v.price_minor);
+      }
+      const es = new EventSource('/api/v1/matches/' + encodeURIComponent(matchId) + '/stream');
+      es.addEventListener('score', (ev) => renderScore(JSON.parse(ev.data)));
+    } else {
+      $('match-status').textContent = 'Not available';
+    }
+  }
+  start();
+})();
+</script>
+</body>
+</html>

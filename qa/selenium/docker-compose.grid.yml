@@ -1,4 +1,4 @@
-# Selenium Grid 4 (hub + one Chrome node), pinned to the images in the rules booklet's pre-pulled bundle.
+# Selenium Grid 4 (hub + 3 browser nodes: 2x Chrome, 1x Firefox, Part II §6.2.1), pinned to the images in the rules booklet's pre-pulled bundle.
 # Hub/node is used rather than standalone because selenium/standalone-chrome is not in that bundle.
 # Start the QA target first (it creates the nascon-qa_default network), then:
 #   docker compose -p nascon-grid -f qa/selenium/docker-compose.grid.yml up -d
@@ -15,7 +15,7 @@ services:
       timeout: 3s
       retries: 30
 
-  chrome:
+  node-chrome-1:
     image: selenium/node-chrome:4.24.0
     shm_size: "1gb"
     depends_on:
@@ -23,11 +23,45 @@ services:
     environment:
       SE_EVENT_BUS_HOST: selenium-hub
       # The node is on two networks; advertise the name the hub can resolve, not the QA-network IP.
-      SE_NODE_HOST: chrome
+      SE_NODE_HOST: node-chrome-1
       SE_EVENT_BUS_PUBLISH_PORT: "4442"
       SE_EVENT_BUS_SUBSCRIBE_PORT: "4443"
       SE_START_VNC: "false"
-      SE_NODE_MAX_SESSIONS: "1"
+      SE_NODE_MAX_SESSIONS: "2"
+    networks:
+      - default
+      - qa-target
+
+  node-chrome-2:
+    image: selenium/node-chrome:4.24.0
+    shm_size: "1gb"
+    depends_on:
+      - selenium-hub
+    environment:
+      SE_EVENT_BUS_HOST: selenium-hub
+      # The node is on two networks; advertise the name the hub can resolve, not the QA-network IP.
+      SE_NODE_HOST: node-chrome-2
+      SE_EVENT_BUS_PUBLISH_PORT: "4442"
+      SE_EVENT_BUS_SUBSCRIBE_PORT: "4443"
+      SE_START_VNC: "false"
+      SE_NODE_MAX_SESSIONS: "2"
+    networks:
+      - default
+      - qa-target
+
+  node-firefox:
+    image: selenium/node-firefox:4.24.0
+    shm_size: "1gb"
+    depends_on:
+      - selenium-hub
+    environment:
+      SE_EVENT_BUS_HOST: selenium-hub
+      # The node is on two networks; advertise the name the hub can resolve, not the QA-network IP.
+      SE_NODE_HOST: node-firefox
+      SE_EVENT_BUS_PUBLISH_PORT: "4442"
+      SE_EVENT_BUS_SUBSCRIBE_PORT: "4443"
+      SE_START_VNC: "false"
+      SE_NODE_MAX_SESSIONS: "2"
     networks:
       - default
       - qa-target

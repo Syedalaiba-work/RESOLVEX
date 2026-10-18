@@ -7,12 +7,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from starlette.concurrency import run_in_threadpool
 
-from app import api_v1, demo, fixtures, phase2_seed, rbac, roster, scoring, seed, sports, standings, store, sync
+from app import (api_v1, demo, fixtures, observability, phase2_routes, phase2_seed, rbac, roster, scoring,
+                 seed, sports, standings, store, sync, web)
 from app.core import MAX_BODY_BYTES, ApiError, error_response, read_json
 from app.db import create_schema, tx, wait_for_db
 
@@ -32,6 +33,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NaSCon League Platform", lifespan=lifespan)
 app.include_router(api_v1.router)
+app.include_router(phase2_routes.router)  # Part II restricted handlers (scaffold: 501 until implemented)
+app.include_router(web.router)  # Guest Web Player, SSE score stream, guest sessions
 
 
 def full_reset(seed_value, stock):
@@ -263,6 +266,18 @@ async def login(request: Request):
 @app.get("/api/v1/ping")
 def ping():
     return {"pong": True}
+
+
+# --- Part II 5.9: observability and privacy ---------------------------------------------------------
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=observability.metrics_text(), headers={"Content-Type": "text/plain; version=0.0.4"})
+
+
+@app.delete("/audit/v1/privacy/user/{user_id}")
+def privacy_erase(user_id: str):
+    return observability.erase_user(user_id)
 
 
 @app.get("/")

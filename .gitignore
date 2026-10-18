@@ -18,3 +18,6 @@ qa/appium/node_modules/
 qa/appium/.appium/
 qa/reports/appium-server.log
 qa/reports/*-source.xml
+
+# Part II §1.3: generated test reports in tests/reports/ must be committed
+!tests/reports/
